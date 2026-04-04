@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FixNow Mechanics – Receipt Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0d0d0d;
+    --yellow: #F5C400;
+    --yellow-dark: #c49a00;
+    --white: #ffffff;
+    --grey-100: #f5f5f5;
+    --grey-200: #e8e8e8;
+    --grey-400: #aaaaaa;
+    --grey-600: #555555;
+    --grey-800: #222222;
+    --panel: #161616;
+    --panel2: #1f1f1f;
+    --border: #2e2e2e;
+    --input-bg: #252525;
+    --input-border: #383838;
+    --input-focus: #F5C400;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--black);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── App Header ── */
+  .app-header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-logo { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+  .app-logo span { color: var(--yellow); }
+  .app-subtitle { font-size: 11px; color: var(--grey-400); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 1px; }
+
+  .header-actions { display: flex; gap: 10px; }
+  .btn {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: var(--radius);
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost { background: transparent; color: var(--grey-400); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--grey-400); color: var(--white); }
+  .btn-primary { background: var(--yellow); color: var(--black); }
+  .btn-primary:hover { background: #ffd700; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,196,0,0.35); }
+  .btn-danger { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b33; }
+  .btn-danger:hover { background: #ff6b6b22; }
+
+  /* ── Layout ── */
+  .workspace {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── FORM PANEL ── */
+  .form-panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .form-section {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+  .form-section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--grey-400);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  input[type="text"], input[type="date"], textarea, select {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--input-focus); }
+  select option { background: var(--panel2); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Line items */
+  .line-items { display: flex; flex-direction: column; gap: 10px; }
+  .line-item {
+    display: grid;
+    grid-template-columns: 1fr 90px 28px;
+    gap: 8px;
+    align-items: center;
+  }
+  .line-item input { margin: 0; }
+  .remove-line {
+    background: none; border: none; color: var(--grey-600);
+    cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px;
+    transition: color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .remove-line:hover { color: #ff6b6b; }
+  .add-line-btn {
+    background: none; border: 1px dashed var(--border); color: var(--grey-400);
+    width: 100%; padding: 8px; border-radius: var(--radius);
+    cursor: pointer; font-size: 12px; font-family: 'Barlow', sans-serif;
+    font-weight: 600; letter-spacing: 0.5px; transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-line-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+
+  .total-display {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px;
+  }
+  .total-label { font-size: 11px; color: var(--grey-400); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .total-value { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600; color: var(--yellow); }
+
+  /* Warranty exclusions */
+  .exclusion-list { display: flex; flex-direction: column; gap: 6px; }
+  .exclusion-item { display: flex; gap: 6px; align-items: center; }
+  .exclusion-item input { flex: 1; }
+
+  /* ── PREVIEW PANEL ── */
+  .preview-panel {
+    overflow-y: auto;
+    background: #888;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 36px 24px;
+  }
+
+  /* ── RECEIPT PREVIEW ── */
+  .receipt {
+    background: white;
+    width: 595px;
+    min-height: 841px;
+    box-shadow: 0 12px 60px rgba(0,0,0,0.5);
+    font-family: 'Barlow', sans-serif;
+    color: #111;
+    padding: 0;
+    position: relative;
+  }
+
+  /* Receipt Header */
+  .r-header {
+    background: #0d0d0d;
+    padding: 18px 28px 14px;
+  }
+  .r-logo-line {
+    display: flex; align-items: baseline; gap: 0;
+    line-height: 1;
+  }
+  .r-logo-fix { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 800; color: white; letter-spacing: 0; }
+  .r-logo-now { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 800; color: #F5C400; }
+  .r-logo-rest { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 800; color: white; letter-spacing: 0.5px; }
+  .r-tagline { font-size: 9.5px; color: #aaa; font-style: italic; margin-top: 3px; letter-spacing: 0.3px; }
+  .r-company-info { font-size: 8px; color: #888; margin-top: 5px; letter-spacing: 0.5px; line-height: 1.4; }
+
+  .r-yellow-bar { height: 3px; background: #F5C400; }
+
+  /* Receipt body */
+  .r-body { padding: 22px 28px 28px; }
+
+  .r-title {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #0d0d0d;
+    margin-bottom: 6px;
+  }
+
+  .r-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #888;
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Section headers */
+  .r-section-head {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8e8e8;
+    margin-top: 16px;
+  }
+
+  .r-kv-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 16px;
+    font-size: 11px;
+  }
+  .r-kv-key { font-weight: 700; color: #333; white-space: nowrap; padding: 1px 0; }
+  .r-kv-val { color: #111; padding: 1px 0; }
+
+  /* Price table */
+  .r-price-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+  .r-price-table thead th {
+    background: #f5f5f5;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: 700;
+    color: #555;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .r-price-table thead th:last-child { text-align: right; }
+  .r-price-table tbody td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+  .r-price-table tbody td:last-child { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+  .r-price-table tbody tr:nth-child(even) { background: #fafafa; }
+
+  /* Total bar */
+  .r-total-bar {
+    background: #0d0d0d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 10px;
+    margin-top: 3px;
+    border-radius: 0 0 3px 3px;
+  }
+  .r-total-label { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 800; color: white; letter-spacing: 2px; }
+  .r-total-amount { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; color: #F5C400; }
+
+  .r-payment-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: #555;
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #f9f9f9;
+    border-radius: 3px;
+  }
+  .r-payment-row span { font-weight: 700; color: #111; }
+
+  /* Warranty */
+  .r-warranty-box {
+    background: #fffbea;
+    border: 1px solid #f0e08a;
+    border-left: 3px solid #F5C400;
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-size: 10px;
+    color: #555;
+    line-height: 1.6;
+    margin-top: 6px;
+  }
+  .r-warranty-box strong { color: #111; }
+  .r-warranty-box ul { margin: 6px 0 0 14px; }
+  .r-warranty-box li { margin-bottom: 2px; }
+
+  /* Notes */
+  .r-notes { font-size: 10.5px; color: #444; line-height: 1.6; margin-top: 6px; }
+
+  /* Footer */
+  .r-footer {
+    margin-top: 28px;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 14px;
+    text-align: center;
+  }
+  .r-footer-bar { height: 2px; background: #F5C400; margin: 0 0 12px; border-radius: 1px; }
+  .r-footer-thanks { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: #0d0d0d; }
+  .r-footer-sub { font-size: 8.5px; color: #aaa; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: white; }
+    .app-header, .form-panel { display: none !important; }
+    .workspace { grid-template-columns: 1fr; }
+    .preview-panel { background: white; padding: 0; }
+    .receipt { box-shadow: none; width: 100%; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- App Header -->
+<header class="app-header">
+  <div>
+    <div class="app-logo">Fix<span>Now</span> Mechanics <span style="color:var(--grey-600);font-weight:400;font-size:14px;">/ Receipt Generator</span></div>
+    <div class="app-subtitle">Internal Tool · Company No. 17004843</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="clearForm()">⟳ Clear Form</button>
+    <button class="btn btn-ghost" onclick="loadDemo()">⬇ Load Demo</button>
+    <button class="btn btn-primary" onclick="printReceipt()">🖨 Print / Save PDF</button>
+  </div>
+</header>
+
+<!-- Workspace -->
+<div class="workspace">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+
+    <div class="form-section">
+      <div class="section-title">Job Info</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Receipt Ref</label>
+          <input type="text" id="f-ref" placeholder="FNM-20260405-001" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="text" id="f-date" placeholder="05/04/2026" oninput="updatePreview()">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Customer &amp; Vehicle</div>
+
+      <div class="field">
+        <label>Customer Name</label>
+        <input type="text" id="f-customer" placeholder="e.g. Matt" oninput="updatePreview()">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Vehicle</label>
+          <input type="text" id="f-vehicle" placeholder="e.g. Mazda 2 (2007)" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>Registration</label>
+          <input type="text" id="f-reg" placeholder="e.g. MJ57 CWF" oninput="updatePreview()">
+        </div>
+      </div>
+      <div class="field">
+        <label>Service Location (Postcode)</label>
+        <input type="text" id="f-location" placeholder="e.g. AL10 8TR" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Work Completed</div>
+
+      <div class="field">
+        <label>Work Description</label>
+        <input type="text" id="f-work" placeholder="e.g. Battery Replacement – Supplied & Fitted" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Part / Battery Type</label>
+        <input type="text" id="f-part" placeholder="e.g. Audura 063 Car Battery" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Warranty</label>
+        <input type="text" id="f-warranty-period" placeholder="e.g. 3-Year Manufacturer Guarantee" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Price Breakdown</div>
+
+      <div class="line-items" id="line-items"></div>
+      <button class="add-line-btn" onclick="addLineItem()">+ Add Line Item</button>
+
+      <div class="total-display">
+        <div class="total-label">Total</div>
+        <div class="total-value" id="total-display">£0.00</div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Payment Method</label>
+        <select id="f-payment" onchange="updatePreview()">
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+          <option value="Cheque">Cheque</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Warranty Exclusions</div>
+      <div class="exclusion-list" id="exclusion-list"></div>
+      <button class="add-line-btn" onclick="addExclusion()" style="margin-top:8px">+ Add Exclusion</button>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Engineer Notes</div>
+      <div class="field">
+        <textarea id="f-notes" rows="3" placeholder="e.g. Battery fitted and tested successfully..." oninput="updatePreview()"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PREVIEW PANEL -->
+  <div class="preview-panel">
+    <div class="receipt" id="receipt-preview">
+
+      <!-- Header -->
+      <div class="r-header">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="r-logo-line">
+              <span class="r-logo-fix">Fix</span><span class="r-logo-now">Now</span><span class="r-logo-rest"> Mechanics</span>
+            </div>
+            <div class="r-company-info">
+              FIXNOW MECHANICS LTD &nbsp;|&nbsp; Mobile Mechanic Service &nbsp;|&nbsp; Company No. 17004843
+            </div>
+          </div>
+          <div class="r-tagline" style="text-align:right;">"When it stops,<br>we start."</div>
+        </div>
+      </div>
+      <div class="r-yellow-bar"></div>
+
+      <!-- Body -->
+      <div class="r-body">
+        <div class="r-title">RECEIPT / INVOICE</div>
+        <div class="r-meta">
+          <span>Ref: <span id="p-ref">—</span></span>
+          <span>Date: <span id="p-date">—</span></span>
+        </div>
+
+        <!-- Customer -->
+        <div class="r-section-head">Customer &amp; Vehicle Details</div>
+        <div class="r-kv-grid">
+          <div class="r-kv-key">Customer Name:</div><div class="r-kv-val" id="p-customer">—</div>
+          <div class="r-kv-key">Vehicle:</div><div class="r-kv-val" id="p-vehicle">—</div>
+          <div class="r-kv-key">Registration:</div><div class="r-kv-val" id="p-reg">—</div>
+          <div class="r-kv-key">Location:</div><div class="r-kv-val" id="p-location">—</div>
+        </div>
+
+        <!-- Work -->
+        <div class="r-section-head">Work Completed</div>
+        <div class="r-kv-grid">
+          <div class="r-kv-key">Work:</div><div class="r-kv-val" id="p-work">—</div>
+          <div class="r-kv-key">Part:</div><div class="r-kv-val" id="p-part">—</div>
+          <div class="r-kv-key">Warranty:</div><div class="r-kv-val" id="p-warranty-period">—</div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="r-section-head">Price Breakdown</div>
+        <table class="r-price-table">
+          <thead>
+            <tr><th>Item / Description</th><th style="text-align:right;">Amount</th></tr>
+          </thead>
+          <tbody id="p-line-items">
+            <tr><td colspan="2" style="color:#aaa;text-align:center;padding:12px;font-size:10px;">No line items added yet</td></tr>
+          </tbody>
+        </table>
+        <div class="r-total-bar">
+          <div class="r-total-label">TOTAL PAID</div>
+          <div class="r-total-amount" id="p-total">£0.00</div>
+        </div>
+        <div class="r-payment-row">
+          Payment Method: <span id="p-payment">—</span>
+        </div>
+
+        <!-- Warranty -->
+        <div class="r-section-head">Warranty Information</div>
+        <div class="r-warranty-box">
+          <div id="p-warranty-text">—</div>
+          <div id="p-exclusions-block" style="display:none; margin-top:6px;">
+            <strong>This warranty does NOT cover:</strong>
+            <ul id="p-exclusions"></ul>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="r-section-head">Engineer Notes</div>
+        <div class="r-notes" id="p-notes">—</div>
+
+        <!-- Footer -->
+        <div class="r-footer">
+          <div class="r-footer-bar"></div>
+          <div class="r-footer-thanks">Thank you for choosing FixNow Mechanics</div>
+          <div class="r-footer-sub">FIXNOW MECHANICS LTD &nbsp;·&nbsp; Mobile Mechanic Service &nbsp;·&nbsp; Co. No. 17004843</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ───────────────────────────────────────────────────────────────────
+  let lineItems = [];
+  let exclusions = [];
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  function init() {
+    loadDemo();
+  }
+
+  function loadDemo() {
+    document.getElementById('f-ref').value = 'FNM-20260405-001';
+    document.getElementById('f-date').value = '05/04/2026';
+    document.getElementById('f-customer').value = 'Matt';
+    document.getElementById('f-vehicle').value = 'Mazda 2 (2007)';
+    document.getElementById('f-reg').value = 'MJ57 CWF';
+    document.getElementById('f-location').value = 'AL10 8TR';
+    document.getElementById('f-work').value = 'Battery Replacement – Supplied & Fitted';
+    document.getElementById('f-part').value = 'Audura 063 Car Battery';
+    document.getElementById('f-warranty-period').value = '3-Year Manufacturer Guarantee';
+    document.getElementById('f-payment').value = 'Bank Transfer';
+    document.getElementById('f-notes').value = 'Battery fitted and tested successfully. Vehicle starting and operating correctly at time of completion.';
+
+    lineItems = [
+      { desc: 'Battery Supply', amount: '43.49' },
+      { desc: 'Mobile Service (Call-Out, Labour & Same-Day Attendance)', amount: '81.51' }
+    ];
+    exclusions = [
+      'Vehicle electrical faults (e.g. alternator issues)',
+      'Misuse or external damage',
+      'Work carried out by third parties'
+    ];
+
+    renderLineItems();
+    renderExclusions();
+    updatePreview();
+  }
+
+  function clearForm() {
+    ['f-ref','f-date','f-customer','f-vehicle','f-reg','f-location','f-work','f-part','f-warranty-period','f-notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-payment').value = 'Bank Transfer';
+    lineItems = [];
+    exclusions = [];
+    renderLineItems();
+    renderExclusions();
+    updatePreview();
+  }
+
+  // ── Line Items ───────────────────────────────────────────────────────────────
+  function addLineItem(desc = '', amount = '') {
+    lineItems.push({ desc, amount });
+    renderLineItems();
+    updatePreview();
+  }
+
+  function removeLineItem(i) {
+    lineItems.splice(i, 1);
+    renderLineItems();
+    updatePreview();
+  }
+
+  function renderLineItems() {
+    const container = document.getElementById('line-items');
+    container.innerHTML = '';
+    lineItems.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'line-item';
+      div.innerHTML = `
+        <input type="text" placeholder="Description" value="${escHtml(item.desc)}"
+               oninput="lineItems[${i}].desc=this.value; updatePreview()">
+        <input type="text" placeholder="£0.00" value="${escHtml(item.amount)}"
+               oninput="lineItems[${i}].amount=this.value; updatePreview()" style="text-align:right; font-family:'IBM Plex Mono',monospace;">
+        <button class="remove-line" onclick="removeLineItem(${i})" title="Remove">✕</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ── Exclusions ───────────────────────────────────────────────────────────────
+  function addExclusion(text = '') {
+    exclusions.push(text);
+    renderExclusions();
+    updatePreview();
+  }
+
+  function removeExclusion(i) {
+    exclusions.splice(i, 1);
+    renderExclusions();
+    updatePreview();
+  }
+
+  function renderExclusions() {
+    const container = document.getElementById('exclusion-list');
+    container.innerHTML = '';
+    exclusions.forEach((ex, i) => {
+      const div = document.createElement('div');
+      div.className = 'exclusion-item';
+      div.innerHTML = `
+        <input type="text" placeholder="Exclusion..." value="${escHtml(ex)}"
+               oninput="exclusions[${i}]=this.value; updatePreview()">
+        <button class="remove-line" onclick="removeExclusion(${i})" title="Remove">✕</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ── Update Preview ────────────────────────────────────────────────────────────
+  function updatePreview() {
+    const g = id => document.getElementById(id).value.trim();
+    const s = (id, val) => { document.getElementById(id).textContent = val || '—'; };
+
+    s('p-ref', g('f-ref'));
+    s('p-date', g('f-date'));
+    s('p-customer', g('f-customer'));
+    s('p-vehicle', g('f-vehicle'));
+    s('p-reg', g('f-reg'));
+    s('p-location', g('f-location'));
+    s('p-work', g('f-work'));
+    s('p-part', g('f-part'));
+    s('p-warranty-period', g('f-warranty-period'));
+    s('p-payment', g('f-payment') || 'Bank Transfer');
+    s('p-notes', g('f-notes'));
+
+    // Line items
+    let total = 0;
+    const tbody = document.getElementById('p-line-items');
+    if (lineItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" style="color:#aaa;text-align:center;padding:12px;font-size:10px;">No line items added yet</td></tr>';
+    } else {
+      tbody.innerHTML = lineItems.map((item, i) => {
+        const amt = parseFloat(item.amount) || 0;
+        total += amt;
+        return `<tr>
+          <td>${escHtml(item.desc) || '<span style="color:#aaa">—</span>'}</td>
+          <td style="text-align:right;font-family:\'IBM Plex Mono\',monospace;">£${amt.toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const totalStr = '£' + total.toFixed(2);
+    document.getElementById('p-total').textContent = totalStr;
+    document.getElementById('total-display').textContent = totalStr;
+
+    // Warranty text
+    const wp = g('f-warranty-period');
+    const wt = wp
+      ? `The battery supplied is covered under a <strong>${escHtml(wp)}</strong>. This covers manufacturing faults and battery failure under normal usage.`
+      : '—';
+    document.getElementById('p-warranty-text').innerHTML = wt;
+
+    // Exclusions
+    const exBlock = document.getElementById('p-exclusions-block');
+    const exList = document.getElementById('p-exclusions');
+    const validEx = exclusions.filter(e => e.trim());
+    if (validEx.length > 0) {
+      exBlock.style.display = 'block';
+      exList.innerHTML = validEx.map(e => `<li>${escHtml(e)}</li>`).join('');
+    } else {
+      exBlock.style.display = 'none';
+    }
+  }
+
+  // ── Print ─────────────────────────────────────────────────────────────────────
+  function printReceipt() {
+    window.print();
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  init();
+</script>
+</body>
+</html>
