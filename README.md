@@ -1,3 +1,9 @@
+> **Archived — moved into FixNow OS.** Everything in this repository (the PDF engine, document editor, finance
+> modules, billing migrations and Edge Functions) now lives in
+> [`fixnow-track-live`](https://github.com/AbuFitz/fixnow-track-live) under `src/os/`, on a single Supabase database
+> shared with the tracker. Do not build on this repo: it is kept only as a reference and for its history. See
+> `docs/FIXNOW-OS-REVIEW-AND-PLAN.md` for why.
+
 # FixNow Billing
 
 Quotes, invoices, receipts, credit notes and the books behind them — built for FixNow Mechanics and wired into
